@@ -11,21 +11,22 @@ uploaded_file = st.file_uploader("Chargez un fichier CSV", type=["csv"])
 if uploaded_file is not None:
     data = pd.read_csv(uploaded_file)
     st.write("Aperçu des données :")
-    st.write(data.head())
+    data_target_column = data.iloc[:, 1:]
+    st.write(data_target_column.head())
 
     # Gestion des valeurs manquantes
     st.header("Gestion des valeurs manquantes")
     st.write("Nombre de valeurs manquantes par colonne :")
-    st.write(data.isnull().sum())
+    st.write(data_target_column.isnull().sum())
 
     # Option pour imputer les colonnes numériques avec la moyenne
     if st.checkbox("Imputer les valeurs manquantes avec la moyenne pour les colonnes numériques"):
         # Identifier les colonnes numériques
-        numeric_columns = data.select_dtypes(include=["float64", "int64"]).columns
+        numeric_columns = data_target_column.select_dtypes(include=["float64", "int64"]).columns
         # Remplir uniquement les colonnes numériques avec la moyenne
-        data[numeric_columns] = data[numeric_columns].fillna(data[numeric_columns].mean())
+        data_target_column[numeric_columns] = data_target_column[numeric_columns].fillna(data_target_column[numeric_columns].mean())
         st.write("Données après imputation des colonnes numériques :")
-        st.write(data.head())
+        st.write(data_target_column.head())
 
 # Vérifiez que la colonne 'alcohol' et 'target' existent
     if 'alcohol' in data.columns and 'target' in data.columns:
@@ -79,8 +80,8 @@ if uploaded_file is not None:
 
     # Option pour afficher les colonnes non numériques avec des valeurs manquantes
     if st.checkbox("Afficher les colonnes non numériques avec des valeurs manquantes"):
-        non_numeric_columns = data.select_dtypes(exclude=["float64", "int64"]).columns
-        missing_non_numeric = data[non_numeric_columns].isnull().sum()
+        non_numeric_columns = data_target_column.select_dtypes(exclude=["float64", "int64"]).columns
+        missing_non_numeric = data_target_column[non_numeric_columns].isnull().sum()
         st.write("Colonnes non numériques avec des valeurs manquantes :")
         st.write(missing_non_numeric)
 
@@ -88,11 +89,11 @@ if uploaded_file is not None:
         if st.checkbox("Imputer les colonnes non numériques avec une valeur par défaut (ex: 'inconnu')"):
             data[non_numeric_columns] = data[non_numeric_columns].fillna("inconnu")
             st.write("Données après imputation des colonnes non numériques :")
-            st.write(data.head())
+            st.write(data_target_column.head())
 
     # Visualisation des statistiques de base
     st.header("Statistiques de base")
-    st.write(data.describe())
+    st.write(data_target_column.describe())
 
 # Option pour afficher les corrélations entre les colonnes numériques
 if st.checkbox("Afficher les corrélations entre les colonnes numériques"):
