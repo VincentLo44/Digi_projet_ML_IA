@@ -15,17 +15,9 @@ from sklearn.preprocessing import OneHotEncoder
 import seaborn as sns
 import joblib
 
-# Titre de l'application Streamlit
-st.title("Pipeline de Machine Learning avec Visualisations")
-
-# Chargement du fichier CSV
-uploaded_file = st.file_uploader("Chargez un fichier CSV", type=["csv"])
-
-if uploaded_file is not None:
-    data = pd.read_csv(uploaded_file)
-    st.write("Aperçu des données :")
-    data_target_column = data.iloc[:, 1:]
-    st.write(data_target_column.head())
+def machine_learning(data, data_target_column):
+    # Titre de l'application Streamlit
+    st.title("Pipeline de Machine Learning avec Visualisations")
 
     # Identification de la cible (target)
     target_column = st.selectbox("Sélectionnez la colonne cible", data_target_column.columns)
@@ -184,6 +176,5 @@ if uploaded_file is not None:
                 # Prédiction avec le modèle chargé
                 prediction = loaded_model.predict(input_df)
                 st.write("Prédiction :", prediction)
-                
-else:
-    st.write("Veuillez charger un fichier CSV pour commencer.")
+    else:
+        st.write("Veuillez charger un fichier CSV pour commencer.")
