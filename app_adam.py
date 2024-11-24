@@ -24,10 +24,15 @@ st.set_page_config(
 )
     
 # Import dataset
-df = pd.read_csv("vin.csv")
+df = pd.read_csv("./Data/vin.csv")
 
 tabs_1, tabs_2, tabs_3, tabs_4 = st.tabs(["Traitement des données", "Visualisations", "Modelisation", "Evaluation"])
 
+#######################################################
+# 2/ Chargement du jeu de donnée : 
+# Charger vos jeux csv à partir de chemins locaux dans votre application afin de construire vos dataframe. 
+# A partir de là, vous devez intégrer des interactions utilisateurs
+#######################################################
 with tabs_1:
     
     # Afficher le tableau
@@ -37,223 +42,129 @@ with tabs_1:
     st.dataframe(df.head())
     st.write("Nous pouvons constater que la première colonne n'est pas été définie en tant qu'index.")
     
+    # Configurer l'index
     st.header("Définition de l'index")
     st.markdown("Nous pouvons le faire en utilisant la commande `.set_index()`.")
     df.columns = ["index","alcohol","malic_acid","ash","alcalinity_of_ash","magnesium","total_phenols","flavanoids","nonflavanoid_phenols","proanthocyanins","color_intensity","hue","od280/od315_of_diluted_wines","proline","target"]
     st.write("Voici un aperçu du dataframe directement après ce petit traitement :")
     df = df.set_index("index")
 
-    # Afficher le tableau
+    # Afficher le nouveau tableau
     st.dataframe(df.head())
     
     # STATS DESCRIPTIVES
     st.title("Analyse descriptive du dataframe")
     
     st.header("Types des colonnes")
-    st.dataframe(df.dtypes)
+    st.write(df.dtypes.to_frame().T)
     
-    st.header("Variables quantitatives")
-    st.write(df.drop("target", axis=1).describe(include='all'))
+    col1, col2 = st.columns(2)
     
-    st.header("Variables qualitatives")
-    st.write(df["target"].value_counts())
+    with col1:
+        st.header("Variables catégorielles:")
+        st.write(df["target"].value_counts().to_frame().T)
 
+        st.subheader("Valeurs de 'target' manquantes")
+        st.write(df["target"].isna().sum())
+    
+    with col2:
+        st.header("Variables quantitatives:")
+        # df uniquement les colonnes numériques
+        df_quant = df.drop("target",axis=1)
+        variable_quantitative = st.selectbox("Sélectionnez une variable :", df_quant.columns)
+
+        st.write(df_quant[variable_quantitative].describe(include='all').to_frame().T)
+
+        st.subheader(f"Valeurs de '{variable_quantitative}' manquantes")
+        st.write(df_quant[variable_quantitative].isna().sum())
+        
+    st.subheader("Matrice de correlation")
+    corr = df_quant.corr()
+    mask = np.zeros_like(corr, dtype=bool)
+    mask[np.triu_indices_from(mask)] = True
+    corr[mask] = np.nan
+    st.dataframe(
+        corr.style
+        .background_gradient(cmap='coolwarm', axis=None, vmin=-1, vmax=1)
+        .highlight_null(color='#f1f1f1')
+        .format(precision=2)
+        )
+
+#######################################################
+# 3/ Effectuer un bloc de traitement de donnée : essayez d’intégrer le maximum de fonctionnalité
+# dans le traitement des données, voici quelques idées intéressantes à implémenter :
+# - Analyse descriptive du dataframe
+# - Graphique de distribution et pairplot
+# - Corrélation avec la target
+# - Fréquences
+# - Standardisation
+# - Valeur manquante et gestion
+# Il serait intéressant d’intégrer des interaction utilisateurs, comme par exemple permettre à
+# l’utilisateur de sélectionner les colonnes souhaitées et appliqué sa demande (afficher un
+# graphique, supprimer une colonne, imputer les valeurs manquantes par un choix etc)
+#######################################################
 with tabs_2:    
     st.title("Variables qualitatives")
     st.header("target")
     st.bar_chart(df["target"].value_counts())
 
     st.title("Variables quantitatives")
-
-    st.header("alcohol")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
+    colonne_selection = st.selectbox("Sélectionnez une variable :", df_quant.columns, key="col_select")
+    graphe_selection = st.selectbox("Sélectionnez un graphe :", ["Histogramme","Boxplot","Courbe de densité","Nuage de point"], 
+                                    key="graph_select")
+    
+    st.header(f"Variable **{colonne_selection}**")
+    
+    if graphe_selection == "Histogramme":
         fig, ax = plt.subplots()
-        sns.kdeplot(df["alcohol"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
+        bins = st.slider('Number of bins', min_value=5, max_value=len(df), value=20, step=1)
+        ax.hist(df[colonne_selection], bins=bins, color='skyblue', edgecolor='black')
+        ax.set_title(f"Distribution de la colonne {colonne_selection}")
+        ax.set_xlabel(colonne_selection)
+        ax.set_ylabel('Fréquence')
         st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="alcohol")
         
-    #############################################################################################
-    
-    #############################################################################################
-    
-    st.header("malic_acid")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
+    elif graphe_selection == "Boxplot":     
         fig, ax = plt.subplots()
-        sns.kdeplot(df["malic_acid"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
+        sns.boxplot(data=df, x='target', y=colonne_selection, palette="Set2", ax=ax)
+        ax.set_title(f"Boxplot de {colonne_selection} selon le Target")
+        ax.set_xlabel("Target")
+        ax.set_ylabel(colonne_selection)
+        st.pyplot(fig)
+        
+    elif graphe_selection == "Courbe de densité": 
+        fig, ax = plt.subplots()
+        sns.kdeplot(df[colonne_selection], fill=True, color="skyblue", ax=ax)
+        ax.set_title(f"Densité de la colonne {colonne_selection}")
+        ax.set_xlabel(colonne_selection)
         ax.set_ylabel('Densité')
         st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="malic_acid")
     
-    st.header("ash")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["ash"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="ash")
-    
-    st.header("alcalinity_of_ash")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["alcalinity_of_ash"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="alcalinity_of_ash")
-    
-    st.header("magnesium")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["magnesium"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="magnesium")
-    
-    st.header("total_phenols")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["total_phenols"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="total_phenols")
-    
-    st.header("flavanoids")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["flavanoids"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="flavanoids")
-    
-    st.header("nonflavanoid_phenols")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["nonflavanoid_phenols"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="nonflavanoid_phenols")
-    
-    st.header("proanthocyanins")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["proanthocyanins"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="proanthocyanins")
-    
-    st.header("color_intensity")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["color_intensity"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="color_intensity")
-    
-    st.header("hue")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["hue"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="hue")
-    
-    st.header("od280/od315_of_diluted_wines")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["od280/od315_of_diluted_wines"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="od280/od315_of_diluted_wines")
-    
-    st.header("proline")
-    col1, col2, col3 = st.columns(3)
-    #
-    with col1:
-        fig, ax = plt.subplots()
-        sns.kdeplot(df["proline"], fill=True, color="skyblue", ax=ax)
-        ax.set_title("Densité de la colonne 'alcohol'")
-        ax.set_xlabel("Degré d'alcool")
-        ax.set_ylabel('Densité')
-        st.pyplot(fig)
-    #
-    with col2:
-        st.scatter_chart(df, x="target", y="proline")
-    
+    elif graphe_selection == "Nuage de point":    
+        st.scatter_chart(df, x="target", y=colonne_selection)
 
 with tabs_3:
+
+    #######################################################
+    # 4/ Effectuer un bloc machine learning pipeline : essayer d’intégrer un pipeline de traitement avec
+    # la possibilité de laisser choisir entre plusieurs algorithmes selon la target détecté. Ensuite,
+    # appliquer le split, le fit et les prédictions des données. Vous pouvez permettre à l’utilisateur de
+    # prédire sur de nouvelles données, d’enregistrer le model etc
+    #######################################################
     pass
 
 with tabs_4:
+    
+    #######################################################
+    # 5/ Effectuer un bloc d’évaluation : essayer d’intégrer un bloc d’évaluation du model qui vient de
+    # tourner et de s’entrainer. Vous pouvez utiliser les métrics ou bien des graphiques. 
+    #######################################################
     pass
+
+
+    
+#######################################################
+# 6/ BONUS : Ajouter des fonctionnalités supplémentaires : essayer d’ajouter des fonctionnalités
+# pour optimiser l’application comme par exemple, un lazy predict, un gridSearchCV, l’integration
+# d’un modèle de Deep Learning etc. pas de limite …
+#######################################################
