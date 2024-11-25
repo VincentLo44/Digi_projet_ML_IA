@@ -26,7 +26,7 @@ with tabs_1:
    
     # Import dataset
     st.title("Chargement du jeu de donnée")
-    df = pd.read_csv("vin.csv",index_col=0) #on définit la 1e colonne comme index
+    df = pd.read_csv(r"D:\Documents\Cours\Alternance\IA et ML\TP\Projet\vin.csv",index_col=0) #on définit la 1e colonne comme index
     st.write("Le data set est composé de",df.shape[0],"lignes et",df.shape[1],"colones.")
    
     # Afficher le tableau
@@ -39,7 +39,7 @@ with tabs_1:
     st.write("Voici un aperçu du dataframe directement après ce petit traitement :")
  
     # Afficher le tableau
-    st.dataframe(df.head())
+    st.dataframe(df.head(), on_select= 'rerun',hide_index= True)
    
     # STATS DESCRIPTIVES
     st.title("Analyse descriptive du dataframe")
@@ -52,7 +52,56 @@ with tabs_1:
    
     st.header("Variables qualitatives")
     st.write(df["target"].value_counts())
- 
+
+    st.write('test colone')
+    option = st.selectbox(
+    "Valeur à étudier ?", options = list(df.drop(columns='target').columns),
+)
+    #slidebar pour filrer les ° d'alcool ???
+
+    if option in df.drop(columns='target').columns :
+        #distrib du degrée d'alcool parmis les vins
+        plt.rcParams['font.size'] = '4'
+        min = round(np.min(df[option]))
+        max = round(np.max(df[option]))
+        bins = st.slider('Combien de bins ?', min_value= 1,max_value=100)
+
+    #Ici on pourrait peut être rendre ça interactif ? En demandant la range de ° ?
+
+        fig, axs = plt.subplots(1,3,figsize=(6,2),sharey=True)
+        cpt = 0
+        for target in pd.unique(df['target']) : 
+            temp = df[df['target'] == str(target)]
+            hist,bins = np.histogram(temp[option],bins=bins,range=[min,max])
+            fig.suptitle('Distribution de %s pour chaque type de vin'%option,fontsize=7)
+            label = "%s" % (str(target))
+            axs[cpt].hist(temp[option],bins,histtype='stepfilled',label=label)
+            axs[cpt].set_xlabel(option)
+            axs[cpt].set_ylabel('Compte')
+            axs[cpt].legend()
+            cpt = cpt +1
+        fig.align_ylabels([axs[0],axs[1]])
+        fig.align_ylabels([axs[1],axs[2]])
+        st.pyplot(fig)
+        F = 100*hist/(df.shape[0])
+        bins_col = []
+        cpt = 0
+        while True : 
+            temp = '['+ str(bins[cpt])+','+str(bins[cpt+1])+']'
+            bins_col.append(temp)
+            cpt+=1
+            if cpt == len(bins)-1 :
+                break
+        cpt = 0 
+        Fdict = {}
+        while True : 
+            Fdict[bins_col[cpt]] = F[cpt]
+            cpt+=1 
+            if cpt == len(bins)-1 :
+                break
+        temp = pd.DataFrame(Fdict, index = np.arange(start=0,stop=1))
+        st.write('Fréquences de %s par bin en pourcentage'%option)
+        st.dataframe(temp)
 with tabs_2:
     pass
  
@@ -62,28 +111,4 @@ with tabs_3:
 with tabs_4:
     pass
 
-#slidebar pour filrer les ° d'alcool ???
 
-#distrib du degrée d'alcool parmis les vins
-min = round(np.min(df['alcohol']))
-max = round(np.max(df['alcohol']))
-bins = (max-min)*2
-
-#Ici on pourrait peut être rendre ça interactif ? En demandant la range de ° ?
-
-fig, axs = plt.subplots(1,3,figsize=(20, 10),sharey=True)
-
-cpt = 0
-for target in pd.unique(df['target']) : 
-    temp = df[df['target'] == str(target)]
-    hist,bins = np.histogram(temp['alcohol'],bins=bins,range=[min,max])
-    fig.suptitle("Distribution du degré d'alcool pour les différents types de vins",fontsize=13)
-    label = "%s" % (str(target))
-    axs[cpt].hist(temp['alcohol'],bins,histtype='bar',label=label)
-    axs[cpt].set_xlabel("Degrée d'alcool")
-    axs[cpt].set_ylabel('Compte')
-    axs[cpt].legend()
-    cpt = cpt +1
-
-fig.align_ylabels([axs[0],axs[1]])
-fig.align_ylabels([axs[1],axs[2]])
