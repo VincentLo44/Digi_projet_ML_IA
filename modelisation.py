@@ -20,56 +20,6 @@ def modelisation(data, data_target_column):
         st.write("Données après imputation des colonnes numériques :")
         st.write(data_target_column.head())
 
-# Vérifiez que la colonne 'alcohol' et 'target' existent
-    if 'alcohol' in data.columns and 'target' in data.columns:
-        # Interaction utilisateur : Définir la plage de degré d'alcool
-        min_alcohol = int(np.floor(data['alcohol'].min()))
-        max_alcohol = int(np.ceil(data['alcohol'].max()))
-        
-        # Ajout d'une entrée interactive pour ajuster la plage
-        # Ordonnées
-        min_input, max_input = st.slider(
-            "Sélectionnez la plage de degré d'alcool",
-            min_value=min_alcohol,
-            max_value=max_alcohol,
-            value=(min_alcohol, max_alcohol)
-        )
-
-        # Définir le nombre de bins (peut être ajusté dynamiquement)
-        # Abscisses
-        bins = st.slider(
-            "Nombre de bins pour l'histogramme",
-            min_value=5,
-            max_value=50,
-            value=10
-        )
-        
-        # Création du graphique
-        fig, axs = plt.subplots(1, 3, figsize=(20, 10), sharey=True)
-        fig.suptitle("Distribution du degré d'alcool pour les différents types de vins", fontsize=13)
-
-        # Boucle sur chaque type de vin pour créer les histogrammes
-        targets = pd.unique(data['target'])
-        for cpt, target in enumerate(targets):
-            if cpt < 3:  # Limité à 3 sous-graphiques pour correspondre à axs
-                temp = data[data['target'] == target]
-                hist, bins_edges = np.histogram(temp['alcohol'], bins=bins, range=[min_input, max_input])
-                
-                label = f"Type : {str(target)}"
-                axs[cpt].hist(temp['alcohol'], bins=bins_edges, histtype='stepfilled', label=label, color='skyblue', edgecolor='black')
-                axs[cpt].set_xlabel("Degré d'alcool")
-                axs[cpt].set_ylabel("Nombre de vins")
-                axs[cpt].legend()
-
-        # Alignement des labels
-        fig.align_ylabels(axs)
-        
-        # Afficher dans Streamlit
-        st.pyplot(fig)
-    else:
-        st.write("Les colonnes 'alcohol' et/ou 'target' sont manquantes dans le DataFrame.")
-
-
     # Option pour afficher les colonnes non numériques avec des valeurs manquantes
     if st.checkbox("Afficher les colonnes non numériques avec des valeurs manquantes"):
         non_numeric_columns = data_target_column.select_dtypes(exclude=["float64", "int64"]).columns
@@ -129,5 +79,4 @@ def modelisation(data, data_target_column):
             file_name="data_transformed.csv",
             mime="text/csv",
         )
-    else:
-        st.write("Veuillez charger un fichier CSV pour commencer.")
+        

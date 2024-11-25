@@ -1,0 +1,6 @@
+[theme]
+base = "dark"
+primaryColor = "#a95d5b"  # Couleur principale (barre latérale et boutons)
+backgroundColor = "#F0F0F0"  # Couleur de l'arrière-plan global
+secondaryBackgroundColor = "#a95d5b"  # Couleur de la barre latérale
+textColor = "#000000"  # Couleur du texte

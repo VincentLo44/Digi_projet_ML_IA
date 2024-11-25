@@ -176,5 +176,3 @@ def machine_learning(data, data_target_column):
                 # Prédiction avec le modèle chargé
                 prediction = loaded_model.predict(input_df)
                 st.write("Prédiction :", prediction)
-    else:
-        st.write("Veuillez charger un fichier CSV pour commencer.")
