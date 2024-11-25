@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from modelisation import modelisation
 from machine_learning import machine_learning
-from general_analysis import distrib_plots
+from general_analysis import distrib_plots, correlation_matrice, pairplot, select_graphes
 from upload_data import upload_data
 
 # CONFIIIIIIIG bash
@@ -31,6 +31,9 @@ def header():
         modelisation(data, data_target_column)
     with tabs_2:
         distrib_plots(data)
+        correlation_matrice(data)
+        pairplot(data)
+        select_graphes(data)
     with tabs_3:
         machine_learning(data, data_target_column)
 
