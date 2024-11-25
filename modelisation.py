@@ -4,16 +4,8 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# Charger les données (adapter à vos besoins)
-st.title("Analyse de données avec Streamlit")
-uploaded_file = st.file_uploader("Chargez un fichier CSV", type=["csv"])
-
-if uploaded_file is not None:
-    data = pd.read_csv(uploaded_file)
-    st.write("Aperçu des données :")
-    data_target_column = data.iloc[:, 1:]
-    st.write(data_target_column.head())
-
+def modelisation(data, data_target_column):
+    st.title("Analyse de données avec Streamlit")
     # Gestion des valeurs manquantes
     st.header("Gestion des valeurs manquantes")
     st.write("Nombre de valeurs manquantes par colonne :")
@@ -95,27 +87,26 @@ if uploaded_file is not None:
     st.header("Statistiques de base")
     st.write(data_target_column.describe())
 
-# Option pour afficher les corrélations entre les colonnes numériques
-if st.checkbox("Afficher les corrélations entre les colonnes numériques"):
-    # Vérification des colonnes numériques uniquement
-    numeric_data = data.select_dtypes(include=["float64", "int64"])
-    
-    # Suppression de la première colonne (assumée comme étant l'index ou à exclure)
-    numeric_data = numeric_data.iloc[:,1:]  # Exclut la première colonne
-    
-    if numeric_data.empty:
-        st.write("Aucune colonne numérique disponible pour calculer les corrélations.")
-    else:
-        st.write("Corrélations :")
-        corr = numeric_data.corr()
-        st.write(corr)
+    # Option pour afficher les corrélations entre les colonnes numériques
+    if st.checkbox("Afficher les corrélations entre les colonnes numériques"):
+        # Vérification des colonnes numériques uniquement
+        numeric_data = data.select_dtypes(include=["float64", "int64"])
+        # Suppression de la première colonne (assumée comme étant l'index ou à exclure)
+        numeric_data = numeric_data.iloc[:,1:]  # Exclut la première colonne
+        
+        if numeric_data.empty:
+            st.write("Aucune colonne numérique disponible pour calculer les corrélations.")
+        else:
+            st.write("Corrélations :")
+            corr = numeric_data.corr()
+            st.write(corr)
 
-        fig, ax = plt.subplots(figsize=(10, 8))  # Taille du graphique plus grande
-        sns.set(style="whitegrid")  # Application du thème Seaborn
-        mat_corr = sns.heatmap(corr, annot=True, fmt=".1f", cmap="coolwarm", ax=ax, 
-                               cbar_kws={"shrink": 0.8}, linewidths=0.5)  # Amélioration du style du heatmap
-        ax.set_title("Matrice de Corrélation", fontsize=16, weight='bold')  # Ajout du titre
-        st.pyplot(fig)
+            fig, ax = plt.subplots(figsize=(10, 8))  # Taille du graphique plus grande
+            sns.set(style="whitegrid")  # Application du thème Seaborn
+            mat_corr = sns.heatmap(corr, annot=True, fmt=".1f", cmap="coolwarm", ax=ax, 
+                                cbar_kws={"shrink": 0.8}, linewidths=0.5)  # Amélioration du style du heatmap
+            ax.set_title("Matrice de Corrélation", fontsize=16, weight='bold')  # Ajout du titre
+            st.pyplot(fig)
 
 
     # Visualisation des relations entre les variables numériques (Pairplot)
@@ -138,5 +129,5 @@ if st.checkbox("Afficher les corrélations entre les colonnes numériques"):
             file_name="data_transformed.csv",
             mime="text/csv",
         )
-else:
-    st.write("Veuillez charger un fichier CSV pour commencer.")
+    else:
+        st.write("Veuillez charger un fichier CSV pour commencer.")
