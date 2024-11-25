@@ -1,9 +1,8 @@
 import streamlit as st
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, label_binarize
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.svm import SVC, SVR
@@ -11,7 +10,6 @@ from sklearn.metrics import accuracy_score, mean_squared_error, confusion_matrix
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
 import seaborn as sns
 import joblib
 
@@ -105,25 +103,49 @@ def machine_learning(data, data_target_column):
             cm = confusion_matrix(y_test, y_pred)
             st.write("Matrice de confusion :")
             fig, ax = plt.subplots()
-            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=np.unique(y), yticklabels=np.unique(y), ax=ax)
+            sns.heatmap(cm, annot=True, fmt="d", cmap="RdBu_r", xticklabels=np.unique(y), yticklabels=np.unique(y), ax=ax)
             ax.set_xlabel("Prédictions")
             ax.set_ylabel("Réel")
             st.pyplot(fig)
 
-            # Courbe ROC
-            if hasattr(model, "predict_proba"):
-                y_proba = pipeline.predict_proba(X_test)[:, 1]
-                fpr, tpr, _ = roc_curve(y_test, y_proba, pos_label=np.unique(y)[1])
-                auc = roc_auc_score(y_test, y_proba)
-                st.write(f"AUC : {auc:.2f}")
-                fig, ax = plt.subplots()
-                ax.plot(fpr, tpr, label=f"AUC = {auc:.2f}")
-                ax.plot([0, 1], [0, 1], 'k--')
-                ax.set_xlabel("Taux de faux positifs")
-                ax.set_ylabel("Taux de vrais positifs")
-                ax.set_title("Courbe ROC")
-                ax.legend()
-                st.pyplot(fig)
+            # # Courbe ROC
+            # if hasattr(model, "predict_proba"):
+            #     y_proba = pipeline.predict_proba(X_test)[:, 1]
+            #     fpr, tpr, _ = roc_curve(y_test, y_proba, pos_label=np.unique(y)[1])
+            #     auc = roc_auc_score(y_test, y_proba)
+            #     st.write(f"AUC : {auc:.2f}")
+            #     fig, ax = plt.subplots()
+            #     ax.plot(fpr, tpr, label=f"AUC = {auc:.2f}")
+            #     ax.plot([0, 1], [0, 1], 'k--')
+            #     ax.set_xlabel("Taux de faux positifs")
+            #     ax.set_ylabel("Taux de vrais positifs")
+            #     ax.set_title("Courbe ROC")
+            #     ax.legend()
+            #     st.pyplot(fig)
+
+
+            # Courbe ROC (uniquement pour les problèmes binaires ou adaptation pour multi-classes)
+            if hasattr(model_filename, "predict_proba"):
+                y_proba = pipeline.predict_proba(X_test)
+                
+                if len(np.unique(y)) == 2:  # Cas binaire
+                    fpr, tpr, _ = roc_curve(y_test, y_proba[:, 1], pos_label=np.unique(y)[1])
+                    auc001 = roc_auc_score(y_test, y_proba[:, 1])
+                    st.write(f"AUC : {auc001:.2f}")
+                    fig, ax = plt.subplots()
+                    ax.plot(fpr, tpr, label=f"AUC = {auc001:.2f}")
+                    ax.plot([0, 1], [0, 1], 'k--')
+                    ax.set_xlabel("Taux de faux positifs")
+                    ax.set_ylabel("Taux de vrais positifs")
+                    ax.set_title("Courbe ROC")
+                    ax.legend()
+                    st.pyplot(fig)
+                else:  # Cas multi-classes
+                    y_test_binarized = label_binarize(y_test, classes=np.unique(y))
+                    auc002 = roc_auc_score(y_test_binarized, y_proba, multi_class="ovr")
+                    st.write(f"AUC (multi-classes) : {auc002:.2f}")
+                    st.pyplot(fig)
+
 
         else:
             mse = mean_squared_error(y_test, y_pred)
@@ -137,42 +159,3 @@ def machine_learning(data, data_target_column):
             ax.set_ylabel("Valeurs prédites")
             ax.set_title("Valeurs réelles vs prédites")
             st.pyplot(fig)
-
-    # Partie ajoutée : Chargement d'un modèle .pkl
-    st.subheader("Charger un modèle préexistant")
-
-    uploaded_model = st.file_uploader("Chargez un fichier modèle (.pkl)", type=["pkl"])
-
-    if uploaded_model is not None:
-        # Charger le modèle
-        loaded_model = joblib.load(uploaded_model)
-        st.success("Modèle chargé avec succès !")
-
-        # Afficher les informations sur le modèle
-        st.write("Modèle chargé :", type(loaded_model))
-
-        # Demander à l'utilisateur d'entrer des données pour prédire
-        input_data = data.iloc[:, 1:]
-        for col in input_data:
-            input_data[col] = st.text_input(f"Valeur pour {col}", "")
-        
-        if st.button("Faire une prédiction avec le modèle chargé"):
-            # Vérifier que toutes les valeurs sont présentes
-            missing_cols = [col for col in input_data.columns if input_data[col].eq("").any()]
-            if missing_cols:
-                st.error(f"Certaines colonnes manquent des valeurs : {missing_cols}")
-            else:
-                # Convertir en DataFrame
-                input_df = pd.DataFrame([input_data])
-                
-                # Corriger les types si nécessaire
-                for col in features:
-                    if input_df[col].dtype == object:
-                        try:
-                            input_df[col] = pd.to_numeric(input_df[col])
-                        except ValueError:
-                            pass
-                
-                # Prédiction avec le modèle chargé
-                prediction = loaded_model.predict(input_df)
-                st.write("Prédiction :", prediction)

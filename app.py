@@ -6,6 +6,7 @@ from modelisation import modelisation
 from machine_learning import machine_learning
 from general_analysis import distrib_plots, correlation_matrice, pairplot, select_graphes
 from upload_data import upload_data
+from preexistant import upload_model_existant
 
 # CONFIIIIIIIG bash
 # streamlit run app.py --global.configFile=.streamlit/config.toml
@@ -19,7 +20,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-tabs_1, tabs_2, tabs_3, tabs_4 = st.tabs(["Prévisualisation des données", "Analyse généralisée", "Machine Learning", "Evaluation"])
+tabs_1, tabs_2, tabs_3, tabs_4, tabs_5 = st.tabs(["Prévisualisation des données", "Analyse généralisée", 
+                                          "Machine Learning", "Evaluation", "Modèle préexistant"])
 
 def header():
     # Chargement des données
@@ -36,6 +38,10 @@ def header():
         select_graphes(data)
     with tabs_3:
         machine_learning(data, data_target_column)
+    with tabs_4:
+        upload_model_existant(data, data_target_column)
+
+    # with tabs_5:
 
 if __name__ == '__main__':
     header()
