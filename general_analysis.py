@@ -5,51 +5,46 @@ import matplotlib.pyplot as plt
 
 
 def distrib_plots(data):
-    data = data.iloc[:,1:]
+    data = data.iloc[:, 1:]  # Suppression de la première colonne si nécessaire
     option = st.selectbox(
-    "Valeur à étudier ?", options = list(data.drop(columns='target').columns),
+        "Valeur à étudier ?", options=list(data.drop(columns='target').columns),
     )
 
-    # slidebar pour filrer les ° d'alcool
-    if option in data.drop(columns='target').columns :
-        # distrib du degrée d'alcool parmis les vins
-        plt.rcParams['font.size'] = '4'
-        min = round(np.min(data[option]))
-        max = round(np.max(data[option]))
-        bins = st.slider('Combien de bins ?', min_value= 1,max_value=100)
+    # Slidebar pour filtrer les degrés d'alcool
+    if option in data.drop(columns='target').columns:
+        # Paramètres interactifs
+        min_val = round(np.min(data[option]))
+        max_val = round(np.max(data[option]))
+        bins = st.slider('Combien de bins ?', min_value=1, max_value=100, value=10)
 
-    # Ici on pourrait peut être rendre ça interactif ? En demandant la range de °
-        fig, axs = plt.subplots(1,3,figsize=(6,2),sharey=True)
+        # Graphiques
+        fig, axs = plt.subplots(1, 3, figsize=(14, 5), sharey=True, constrained_layout=True)  # Taille augmentée + espacement
         cpt = 0
-        for target in pd.unique(data['target']) : 
+        for target in pd.unique(data['target']):
             temp = data[data['target'] == str(target)]
-            hist,bins = np.histogram(temp[option],bins=bins,range=[min,max])
-            fig.suptitle('Distribution de %s pour chaque type de vin'%option,fontsize=7)
-            label = "%s" % (str(target))
-            axs[cpt].hist(temp[option],bins,histtype='stepfilled',label=label)
-            axs[cpt].set_xlabel(option)
-            axs[cpt].set_ylabel('Compte')
-            axs[cpt].legend()
-            cpt = cpt +1
-        fig.align_ylabels([axs[0],axs[1]])
-        fig.align_ylabels([axs[1],axs[2]])
+            hist, bins_edges = np.histogram(temp[option], bins=bins, range=[min_val, max_val])
+            fig.suptitle(f'Distribution de {option} pour chaque type de vin', fontsize=14, weight='bold')
+            label = f"{str(target)}"
+            axs[cpt].hist(temp[option], bins_edges, histtype='stepfilled', label=label, alpha=0.7, edgecolor='black')
+
+            # Réglage explicite des étiquettes
+            axs[cpt].set_xlabel(option, fontsize=12, weight='bold')
+            axs[cpt].set_ylabel('Compte', fontsize=12, weight='bold')
+            axs[cpt].tick_params(axis='both', which='major', labelsize=10)  # Taille des graduations
+            axs[cpt].legend(loc='upper right', fontsize=10)
+            axs[cpt].grid(True, linestyle='--', alpha=0.6)
+            cpt += 1
+
         st.pyplot(fig)
-        F = 100*hist/(data.shape[0])
+
+        # Calcul des fréquences
+        F = 100 * hist / (data.shape[0])
         bins_col = []
-        cpt = 0
-        while True : 
-            temp = '['+ str(bins[cpt])+','+str(bins[cpt+1])+']'
+        for i in range(len(bins_edges) - 1):
+            temp = f"[{bins_edges[i]:.2f}, {bins_edges[i + 1]:.2f}]"
             bins_col.append(temp)
-            cpt+=1
-            if cpt == len(bins)-1 :
-                break
-        cpt = 0 
-        Fdict = {}
-        while True : 
-            Fdict[bins_col[cpt]] = F[cpt]
-            cpt+=1 
-            if cpt == len(bins)-1 :
-                break
-        temp = pd.DataFrame(Fdict, index = np.arange(start=0,stop=1))
-        st.write('Fréquences de %s par bin en pourcentage'%option)
-        st.dataframe(temp)
+
+        Fdict = {bins_col[i]: F[i] for i in range(len(bins_col))}
+        freq_df = pd.DataFrame(Fdict, index=[0])
+        st.write(f'Fréquences de {option} par bin en pourcentage')
+        st.dataframe(freq_df)

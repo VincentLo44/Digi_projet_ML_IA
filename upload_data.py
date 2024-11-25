@@ -12,5 +12,5 @@ def upload_data():
         st.write(data_target_column.head())
         return data, data_target_column
     else:
-        st.warning("Veuillez charger un fichier CSV pour continuer.")
+        st.error("Veuillez charger un fichier CSV pour continuer.")
         return None, None
