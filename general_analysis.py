@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import plotly.express as px
 
 def distrib_plots(data):
     data = data.iloc[:, 1:]  # Suppression de la première colonne si nécessaire
@@ -115,6 +115,16 @@ def select_graphes(data):
         ax.set_xlabel(colonne_selection)
         ax.set_ylabel('Densité')
         st.pyplot(fig)
-    
+
     elif graphe_selection == "Nuage de point":    
-        st.scatter_chart(data, x="target", y=colonne_selection, color='#A13636')
+        # Vérifiez que les colonnes existent dans vos données
+        if "target" in data.columns and colonne_selection in data.columns:
+            fig = px.scatter(
+                data,
+                x="target",
+                y=colonne_selection,
+                color_discrete_sequence=["#A13636"]
+            )
+            st.plotly_chart(fig)
+        else:
+            st.error("Les colonnes 'target' ou la colonne sélectionnée n'existent pas dans les données.")
