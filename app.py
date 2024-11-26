@@ -20,8 +20,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-tabs_1, tabs_2, tabs_3, tabs_4, tabs_5 = st.tabs(["Prévisualisation des données", "Analyse généralisée", 
-                                          "Machine Learning", "Evaluation", "Modèle préexistant"])
+tabs_1, tabs_2, tabs_3, tabs_4 = st.tabs(["Prévisualisation des données", "Analyse généralisée", 
+                                          "Machine Learning", "Modèle préexistant"])
 
 def header():
     # Chargement des données
@@ -40,8 +40,6 @@ def header():
         machine_learning(data, data_target_column)
     with tabs_4:
         upload_model_existant(data, data_target_column)
-
-    # with tabs_5:
 
 if __name__ == '__main__':
     header()
