@@ -12,6 +12,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 import seaborn as sns
 import joblib
+import io
 
 def machine_learning(data, data_target_column):
     # Titre de l'application Streamlit
@@ -87,10 +88,19 @@ def machine_learning(data, data_target_column):
         # Prédictions
         y_pred = pipeline.predict(X_test)
 
-        # Sauvegarde du modèle
+        # Sauvegarde du modèle dans un objet en mémoire
         model_filename = "model.pkl"
-        joblib.dump(pipeline, model_filename)
-        st.success(f"Le modèle a été sauvegardé sous le nom : {model_filename}")
+        model_bytes = io.BytesIO()  # Utiliser BytesIO pour enregistrer en mémoire
+        joblib.dump(pipeline, model_bytes)
+        model_bytes.seek(0)  # Revenir au début du fichier en mémoire
+
+        # Afficher un bouton de téléchargement
+        st.download_button(
+            label="Télécharger le modèle entraîné",
+            data=model_bytes,
+            file_name=model_filename,
+            mime="application/octet-stream"
+        )
 
         # Affichage des performances
         st.subheader("Résultats du Modèle")
@@ -108,24 +118,8 @@ def machine_learning(data, data_target_column):
             ax.set_ylabel("Réel")
             st.pyplot(fig)
 
-            # # Courbe ROC
-            # if hasattr(model, "predict_proba"):
-            #     y_proba = pipeline.predict_proba(X_test)[:, 1]
-            #     fpr, tpr, _ = roc_curve(y_test, y_proba, pos_label=np.unique(y)[1])
-            #     auc = roc_auc_score(y_test, y_proba)
-            #     st.write(f"AUC : {auc:.2f}")
-            #     fig, ax = plt.subplots()
-            #     ax.plot(fpr, tpr, label=f"AUC = {auc:.2f}")
-            #     ax.plot([0, 1], [0, 1], 'k--')
-            #     ax.set_xlabel("Taux de faux positifs")
-            #     ax.set_ylabel("Taux de vrais positifs")
-            #     ax.set_title("Courbe ROC")
-            #     ax.legend()
-            #     st.pyplot(fig)
-
-
             # Courbe ROC (uniquement pour les problèmes binaires ou adaptation pour multi-classes)
-            if hasattr(model_filename, "predict_proba"):
+            if hasattr(model, "predict_proba"):
                 y_proba = pipeline.predict_proba(X_test)
                 
                 if len(np.unique(y)) == 2:  # Cas binaire
@@ -145,7 +139,6 @@ def machine_learning(data, data_target_column):
                     auc002 = roc_auc_score(y_test_binarized, y_proba, multi_class="ovr")
                     st.write(f"AUC (multi-classes) : {auc002:.2f}")
                     st.pyplot(fig)
-
 
         else:
             mse = mean_squared_error(y_test, y_pred)
